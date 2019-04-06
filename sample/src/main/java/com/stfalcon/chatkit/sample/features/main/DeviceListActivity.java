@@ -1,8 +1,8 @@
 /*
  * Copyright (c) 2018-2019 Shrowshoo Young All Rights Reserved
  *
- * This programme is developed as free software for the investigation of human
- * pose estimation using RF signals. Redistribution or modification of it is
+ * This programme is developed as free software for the Development of
+ * bluetooth chat application. Redistribution or modification of it is
  * allowed under the terms of the GNU General Public Licence published by the
  * Free Software Foundation, either version 3 or later version.
  *
@@ -19,7 +19,6 @@
  * This is an unoptimized software designed to meet the requirements of the
  * processing pipeline. No further technical support is guaranteed.
  * */
-
 package com.stfalcon.chatkit.sample.features.main;
 
 import android.bluetooth.BluetoothAdapter;
