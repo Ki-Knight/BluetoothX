@@ -23,7 +23,9 @@
             </intent-filter>
 
         </activity>
-
+        <activity
+            android:name=".features.main.MessagesActivity"
+            android:theme="@style/BlueTheme"/>
         <activity
             android:name=".features.demo.def.DefaultMessagesActivity"
             android:theme="@style/BlueTheme"/>

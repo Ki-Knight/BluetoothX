@@ -22,7 +22,30 @@
 
 package com.stfalcon.chatkit.sample.features.main;
 
+import com.stfalcon.chatkit.sample.common.data.model.Message;
+import com.stfalcon.chatkit.sample.common.data.model.User;
+
+import java.util.Calendar;
+import java.util.Date;
+
 public class MassageHandler {
     // Tag for logger output
     private static final String TAG = "MassageHandler";
+
+    public Message getDemoMessage() {
+        Calendar calendar = Calendar.getInstance();
+        Date date = calendar.getTime();
+
+        return new Message(
+                "121",
+                new User(
+                        "121",
+                        "121",
+                        null,
+                        true
+                ),
+                "Hello world!",
+                date
+        );
+    }
 }

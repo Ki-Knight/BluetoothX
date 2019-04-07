@@ -23,11 +23,8 @@ package com.stfalcon.chatkit.sample.features.main;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothServerSocket;
-import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
@@ -36,13 +33,10 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import com.avast.android.dialogs.fragment.ProgressDialogFragment;
 import com.avast.android.dialogs.fragment.SimpleDialogFragment;
-import com.longsh.optionframelibrary.OptionMaterialDialog;
 import com.squareup.picasso.Picasso;
 import com.stfalcon.chatkit.commons.ImageLoader;
 import com.stfalcon.chatkit.dialogs.DialogsList;
@@ -55,15 +49,11 @@ import com.stfalcon.chatkit.sample.features.demo.DemoDialogsActivity;
 import com.stfalcon.chatkit.sample.features.demo.def.DefaultMessagesActivity;
 import com.stfalcon.chatkit.sample.utils.AppUtils;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.Set;
-import java.util.UUID;
 
-public class DeviceListActivity extends AppCompatActivity {
+public class DeviceListActivity extends DemoDialogsActivity {
     // Activity tag for logger
-    private static final String TAG = "DeviceListAcitivity";
+    private static final String TAG = "DeviceListActivity";
 
     // Request to enable bluetooth constant
     private static final int REQUEST_ENABLE_BT = 1;
@@ -128,6 +118,11 @@ public class DeviceListActivity extends AppCompatActivity {
     }
 
     @Override
+    public void onDialogClick(Dialog dialog) {
+        MessagesActivity.open(this);
+    }
+
+    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.device_list_menu, menu);
@@ -189,27 +184,11 @@ public class DeviceListActivity extends AppCompatActivity {
 
     private void initAdapter() {
         mDialogsAdapter = new DialogsListAdapter<>(imageLoader);
-        //mDialogsAdapter.setItems(DialogsFixtures.getDialogs());
+        mDialogsAdapter.setItems(DialogsFixtures.getDialogs());
         //onNewDialog(getDemoDialog());
 
-        mDialogsAdapter.setOnDialogClickListener(
-                new DialogsListAdapter.OnDialogClickListener<Dialog>() {
-            @Override
-            public void onDialogClick(Dialog dialog) {
-                DefaultMessagesActivity.open(DeviceListActivity.this);
-            }
-        });
-
-        mDialogsAdapter.setOnDialogLongClickListener(
-                new DialogsListAdapter.OnDialogLongClickListener<Dialog>() {
-            @Override
-            public void onDialogLongClick(Dialog dialog) {
-                AppUtils.showToast(
-                    DeviceListActivity.this,
-                    dialog.getDialogName(),
-                    false);
-            }
-        });
+        mDialogsAdapter.setOnDialogClickListener(this);
+        mDialogsAdapter.setOnDialogLongClickListener(this);
 
         mDialogsListView.setAdapter(mDialogsAdapter);
     }
@@ -274,5 +253,13 @@ public class DeviceListActivity extends AppCompatActivity {
         }
 
         mBluetoothAdapter.startDiscovery();
+    }
+
+    @Override
+    public void onDialogLongClick(Dialog dialog) {
+        AppUtils.showToast(
+                this,
+                dialog.getDialogName(),
+                false);
     }
 }

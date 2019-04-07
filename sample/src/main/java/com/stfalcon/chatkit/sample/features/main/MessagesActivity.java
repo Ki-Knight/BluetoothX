@@ -1,4 +1,4 @@
-package com.stfalcon.chatkit.sample.features.demo.def;
+package com.stfalcon.chatkit.sample.features.main;
 
 import android.content.Context;
 import android.content.Intent;
@@ -15,13 +15,13 @@ import com.stfalcon.chatkit.sample.common.data.model.Message;
 import com.stfalcon.chatkit.sample.features.demo.DemoMessagesActivity;
 import com.stfalcon.chatkit.sample.utils.AppUtils;
 
-public class DefaultMessagesActivity extends DemoMessagesActivity
+public class MessagesActivity extends DemoMessagesActivity
         implements MessageInput.InputListener,
         MessageInput.AttachmentsListener,
         MessageInput.TypingListener {
 
     public static void open(Context context) {
-        context.startActivity(new Intent(context, DefaultMessagesActivity.class));
+        context.startActivity(new Intent(context, MessagesActivity.class));
     }
 
     private MessagesList messagesList;
@@ -29,7 +29,7 @@ public class DefaultMessagesActivity extends DemoMessagesActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_default_messages);
+        setContentView(R.layout.messages_activity);
 
         this.messagesList = (MessagesList) findViewById(R.id.messagesList);
         initAdapter();
@@ -59,9 +59,10 @@ public class DefaultMessagesActivity extends DemoMessagesActivity
         super.messagesAdapter.setLoadMoreListener(this);
         super.messagesAdapter.registerViewClickListener(R.id.messageUserAvatar,
                 new MessagesListAdapter.OnMessageViewClickListener<Message>() {
+
                     @Override
                     public void onMessageViewClick(View view, Message message) {
-                        AppUtils.showToast(DefaultMessagesActivity.this,
+                        AppUtils.showToast(MessagesActivity.this,
                                 message.getUser().getName() + " avatar click",
                                 false);
                     }
