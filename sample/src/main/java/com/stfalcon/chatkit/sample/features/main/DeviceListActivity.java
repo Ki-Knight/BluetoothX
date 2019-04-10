@@ -28,7 +28,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -36,6 +35,7 @@ import android.view.MenuItem;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.avast.android.dialogs.fragment.ProgressDialogFragment;
 import com.avast.android.dialogs.fragment.SimpleDialogFragment;
 import com.squareup.picasso.Picasso;
 import com.stfalcon.chatkit.commons.ImageLoader;
@@ -46,9 +46,10 @@ import com.stfalcon.chatkit.sample.common.data.fixtures.DialogsFixtures;
 import com.stfalcon.chatkit.sample.common.data.model.Dialog;
 import com.stfalcon.chatkit.sample.common.data.model.Message;
 import com.stfalcon.chatkit.sample.features.demo.DemoDialogsActivity;
-import com.stfalcon.chatkit.sample.features.demo.def.DefaultMessagesActivity;
 import com.stfalcon.chatkit.sample.utils.AppUtils;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 public class DeviceListActivity extends DemoDialogsActivity {
@@ -75,6 +76,8 @@ public class DeviceListActivity extends DemoDialogsActivity {
     // Bluetooth chat interface
     private BluetoothChatService mBluetoothChatService;
 
+    private Map<String, BluetoothDevice> mDeviceMap;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -90,6 +93,8 @@ public class DeviceListActivity extends DemoDialogsActivity {
 
         // Get instance of DialogHandler
         mDialogHandler = new DialogHandler();
+        // Get instance of device list
+        mDeviceMap = new HashMap<String, BluetoothDevice>();
 
         // Set dialogs list view
         mDialogsListView = (DialogsList) findViewById(R.id.devicelist);
@@ -102,6 +107,7 @@ public class DeviceListActivity extends DemoDialogsActivity {
             Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
             for (BluetoothDevice device : pairedDevices) {
                 onNewDialog(mDialogHandler.getDialogFromDevice(device));
+                mDeviceMap.put(device.getAddress(), device);
             }
         }
 
@@ -114,11 +120,36 @@ public class DeviceListActivity extends DemoDialogsActivity {
         filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
         registerReceiver(mBroadcastReceiver, filter);
 
-        //mBluetoothChatService = new BluetoothChatService(this, mBluetoothAdapter);
+        // Get instance of bluetooth chat service
+        mBluetoothChatService = new BluetoothChatService(mBluetoothAdapter, mDialogsAdapter);
     }
 
     @Override
     public void onDialogClick(Dialog dialog) {
+        // Display progress bar while connecting to remote device
+        android.support.v4.app.DialogFragment progressBar =
+                ProgressDialogFragment.createBuilder(DeviceListActivity.this,
+                        getSupportFragmentManager())
+                .setCancelableOnTouchOutside(true)
+                .setMessage("Connecting")
+                .show();
+
+        // Get the instance of device of the clicked dialog
+        String address = dialog.getId();
+        BluetoothDevice device = mDeviceMap.get(address);
+
+        try {
+            mBluetoothChatService.connect(device);
+        } catch (Exception e) {
+            // Connection failed, display connection fail notice to user
+            progressBar.dismiss();
+            Toast.makeText(this, "Connection failed, please try later!",
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Connection succeeded
+        progressBar.dismiss();
         MessagesActivity.open(this);
     }
 
@@ -221,6 +252,8 @@ public class DeviceListActivity extends DemoDialogsActivity {
                 // Add a new dialog if new device is found
                 if (newDevice.getBondState() != BluetoothDevice.BOND_BONDED) {
                     onNewDialog(mDialogHandler.getDialogFromDevice(newDevice));
+                    // Add new device to the list
+                    mDeviceMap.put(newDevice.getAddress(), newDevice);
                 }
             }
             else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {

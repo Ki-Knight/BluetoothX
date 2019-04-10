@@ -44,6 +44,7 @@ public abstract class DemoMessagesActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
 
         imageLoader = new ImageLoader() {
+
             @Override
             public void loadImage(ImageView imageView, String url, Object payload) {
                 Picasso.with(DemoMessagesActivity.this).load(url).into(imageView);

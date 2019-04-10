@@ -1,3 +1,25 @@
+/*
+ * Copyright (c) 2018-2019 Shrowshoo Young All Rights Reserved
+ *
+ * This programme is developed as free software for the Development of
+ * bluetooth chat application. Redistribution or modification of it is
+ * allowed under the terms of the GNU General Public Licence published by the
+ * Free Software Foundation, either version 3 or later version.
+ *
+ * Redistribution and use in source or executable programme, with or without
+ * modification is permitted provided that the following conditions are met:
+ *
+ * 1. Redistribution in the form of source code with the copyright notice
+ *    above, the conditions and following disclaimer retained.
+ *
+ * 2. Redistribution in the form of executable programme must reproduce the
+ *    copyright notice, conditions and following disclaimer in the
+ *    documentation and\or other literal materials provided in the distribution.
+ *
+ * This is an unoptimized software designed to meet the requirements of the
+ * processing pipeline. No further technical support is guaranteed.
+ * */
+
 package com.stfalcon.chatkit.sample.features.main;
 
 import android.content.Context;
@@ -58,15 +80,15 @@ public class MessagesActivity extends DemoMessagesActivity
         super.messagesAdapter.enableSelectionMode(this);
         super.messagesAdapter.setLoadMoreListener(this);
         super.messagesAdapter.registerViewClickListener(R.id.messageUserAvatar,
-                new MessagesListAdapter.OnMessageViewClickListener<Message>() {
+            new MessagesListAdapter.OnMessageViewClickListener<Message>() {
 
-                    @Override
-                    public void onMessageViewClick(View view, Message message) {
-                        AppUtils.showToast(MessagesActivity.this,
-                                message.getUser().getName() + " avatar click",
-                                false);
-                    }
-});
+                @Override
+                public void onMessageViewClick(View view, Message message) {
+                    AppUtils.showToast(MessagesActivity.this,
+                            message.getUser().getName() + " avatar click",
+                            false);
+                }
+        });
         this.messagesList.setAdapter(super.messagesAdapter);
         }
 
