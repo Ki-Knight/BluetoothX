@@ -95,6 +95,8 @@ public class DeviceListActivity extends DemoDialogsActivity {
         mDialogHandler = new DialogHandler();
         // Get instance of device list
         mDeviceMap = new HashMap<String, BluetoothDevice>();
+        // Get instance of bluetooth chat service
+        mBluetoothChatService = new BluetoothChatService(mBluetoothAdapter, mDialogsAdapter);
 
         // Set dialogs list view
         mDialogsListView = (DialogsList) findViewById(R.id.devicelist);
@@ -108,6 +110,7 @@ public class DeviceListActivity extends DemoDialogsActivity {
             for (BluetoothDevice device : pairedDevices) {
                 onNewDialog(mDialogHandler.getDialogFromDevice(device));
                 mDeviceMap.put(device.getAddress(), device);
+                //mBluetoothChatService
             }
         }
 
@@ -119,9 +122,6 @@ public class DeviceListActivity extends DemoDialogsActivity {
         // Register discovery finished receiver
         filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
         registerReceiver(mBroadcastReceiver, filter);
-
-        // Get instance of bluetooth chat service
-        mBluetoothChatService = new BluetoothChatService(mBluetoothAdapter, mDialogsAdapter);
     }
 
     @Override

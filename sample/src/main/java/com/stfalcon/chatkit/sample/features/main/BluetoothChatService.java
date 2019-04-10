@@ -34,8 +34,11 @@ import com.stfalcon.chatkit.dialogs.DialogsListAdapter;
 import com.stfalcon.chatkit.messages.MessagesListAdapter;
 import com.stfalcon.chatkit.sample.common.data.model.Dialog;
 import com.stfalcon.chatkit.sample.common.data.model.Message;
+import com.stfalcon.chatkit.sample.common.data.model.User;
 
 import java.io.IOException;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.UUID;
 
 public class BluetoothChatService {
@@ -50,7 +53,7 @@ public class BluetoothChatService {
     // Connection socket manager
     protected SocketManager mSocketManager;
     // Dialog list view adapter
-    protected DialogsListAdapter<Dialog> mDialogsAdapter;
+    private DialogsListAdapter<Dialog> mDialogsAdapter;
     // Message list view adapter
     protected MessagesListAdapter<Message> mMessagesAdapter;
     // Chat message history handler
@@ -68,6 +71,10 @@ public class BluetoothChatService {
     private static final int CLIENT_CONNECTING = 0;
     private static final int SERVER_CONNECTING = 1;
 
+    // The address of now interacting device
+    private String mDeviceAddressNow = null;
+    private final User mUserSelf;
+
     protected BluetoothChatService(BluetoothAdapter btadapter,
                                    DialogsListAdapter<Dialog> adapter) {
         mBluetoothAdapter = btadapter;
@@ -79,17 +86,51 @@ public class BluetoothChatService {
         mState = SERVER_CONNECTING;
         mAcceptThread = new AcceptThread();
         mAcceptThread.start();
+
+        // Set the user information of local bluetooth device
+        User temp = new User(
+                btadapter.getAddress(),
+                btadapter.getName(),
+                null,
+                true
+        );
+        mUserSelf = temp;
     }
 
-    public void updateMessages(String address, byte[] message) {
+    protected void sendTextMessage(String content) {
+        // Get current date to add to message
+        Calendar calendar = Calendar.getInstance();
+        Date date = calendar.getTime();
 
+        // Get message instance
+        Message message = new Message(
+                mDeviceAddressNow,
+                mUserSelf,
+                content,
+                date
+        );
+
+        // Get the message in the form of binary array
+        byte[] messageb = castMessage2Byte(message);
+        try {
+            // Send binary message to target remote device
+            mSocketManager.sendMassageByDevice(mDeviceAddressNow, messageb);
+        } catch (Exception e){
+            Log.d(TAG, "Send message failed, connection does not exist!");
+        }
+
+        updateMessages(mDeviceAddressNow, message);
+        mMessagesAdapter.addToStart(message, true);
     }
 
-    public void updateMessagesList() {
-
+    protected void updateMessages(String address, Message message) {
+        // Add message to message history handler
+        mMessageHandler.addHistory(address, message);
+        // Update device list dialogs
+        mDialogsAdapter.updateDialogWithMessage(address, message);
     }
 
-    protected synchronized void connect(BluetoothDevice device) throws Exception{
+    protected synchronized void connect(BluetoothDevice device) {
 
         // Terminate now running accept thread
         if (mState == CLIENT_CONNECTING) { mConnectThread.cancel(); mConnectThread = null; }
@@ -101,11 +142,28 @@ public class BluetoothChatService {
         mConnectThread = new ConnectThread(device);
         mConnectThread.start();
 
-
     }
 
-    protected void onConnectionAccepted() {
+    private byte[] castMessage2Byte(Message message) {
+        byte [] messageb = null;
+        return messageb;
+    }
 
+    protected Message castByte2Messsage(byte[] messageb) {
+        Message message = null;
+        return message;
+    }
+
+    protected void setMessagesAdapter(MessagesListAdapter adapter) {
+        mMessagesAdapter = adapter;
+    }
+
+    protected void onConnectionAccepted(BluetoothSocket socket) {
+        mSocketManager.add(socket);
+    }
+
+    protected void addNewMessageHistory(String address) {
+        mMessageHandler.addNewHistory(address, null);
     }
 
     protected void streamExceptionHandler() {
@@ -139,7 +197,7 @@ public class BluetoothChatService {
             try {
                 tmp = mBluetoothAdapter.listenUsingRfcommWithServiceRecord(NAME_SECURE, MY_UUID);
             } catch (IOException e) {
-                Log.e(TAG, "listen() failed", e);
+                Log.d(TAG, "listen() failed", e);
             }
             mmServerSocket = tmp;
         }
@@ -155,11 +213,14 @@ public class BluetoothChatService {
                     // successful connection or an exception
                     socket = mmServerSocket.accept();
                 } catch (IOException e) {
-                    Log.e(TAG, "accept() failed", e);
+                    Log.d(TAG, "accept() failed", e);
                     break;
                 }
 
                 // If a connection was accepted
+                if (socket != null) {
+                    mSocketManager.add(socket);
+                }
             }
         }
 
@@ -167,7 +228,7 @@ public class BluetoothChatService {
             try {
                 mmServerSocket.close();
             } catch (IOException e) {
-                Log.e(TAG, "close() of server failed", e);
+                Log.d(TAG, "close() of server failed", e);
             }
         }
     }
@@ -185,7 +246,7 @@ public class BluetoothChatService {
             try {
                 tmp = device.createRfcommSocketToServiceRecord(MY_UUID);
             } catch (IOException e) {
-                Log.e(TAG, "create() failed", e);
+                Log.d(TAG, "create() failed", e);
             }
             mmSocket = tmp;
         }
@@ -208,7 +269,7 @@ public class BluetoothChatService {
                 try {
                     mmSocket.close();
                 } catch (IOException e2) {
-                    Log.e(TAG, "unable to close() socket during connection failure", e2);
+                    Log.d(TAG, "unable to close() socket during connection failure", e2);
                 }
                 // Start the service over to restart listening mode
                 //BluetoothChatService.this.start();
@@ -224,7 +285,7 @@ public class BluetoothChatService {
             //connected(mmSocket, mmDevice);
         }
 
-        public void cancel() {
+        private void cancel() {
             try {
                 mmSocket.close();
             } catch (IOException e) {

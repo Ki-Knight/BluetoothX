@@ -52,7 +52,7 @@ public class DialogHandler {
         return new Dialog(
                 device.getAddress(),
                 device.getName(),
-                "no photo",
+                null,
                 users,
                 emptyMessage,
                 0
@@ -64,7 +64,7 @@ public class DialogHandler {
         arrayList.add(new User(
                 device.getAddress(),
                 device.getName(),
-                "no avatar",
+                null,
                 true
         ));
 

@@ -151,7 +151,9 @@ public class SocketManager {
                     // Read from the InputStream
                     bytes = mmStreamIn.read(buffer);
                     if (bytes != 0) {
-                        mChatService.updateMessages(mmDevice.getAddress(), buffer);
+                        // Cast binary array to message instance
+                        Message message = mChatService.castByte2Messsage(buffer);
+                        mChatService.updateMessages(mmDevice.getAddress(), message);
                     }
                 } catch (IOException e) {
                     Log.e(TAG, "disconnected", e);

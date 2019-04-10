@@ -22,6 +22,7 @@
 
 package com.stfalcon.chatkit.sample.features.main;
 
+import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.stfalcon.chatkit.sample.common.data.model.Message;
@@ -42,7 +43,7 @@ public class MessageHandler {
         mMessageHistory = new HashMap<String, ArrayList<Message>>();
     }
 
-    public void addHistory(String address, Message message) {
+    protected void addHistory(String address, Message message) {
         // Get target message history
         ArrayList<Message> messages = mMessageHistory.get(address);
         if (messages == null) {
@@ -64,5 +65,20 @@ public class MessageHandler {
         }
 
         return messages;
+    }
+
+    protected void addNewHistory(String address, @Nullable Message message) {
+        // Check whether history already in the map
+        if (mMessageHistory.containsKey(address)) {
+            Log.d(TAG, "Target device already in the history!");
+            return;
+        }
+        // Add a new history
+        mMessageHistory.put(address, new ArrayList<Message>());
+
+        if (message != null) {
+            ArrayList<Message> history = mMessageHistory.get(address);
+            history.add(message);
+        }
     }
 }

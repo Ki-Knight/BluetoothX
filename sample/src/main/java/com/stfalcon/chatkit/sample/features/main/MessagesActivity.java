@@ -47,6 +47,8 @@ public class MessagesActivity extends DemoMessagesActivity
     }
 
     private MessagesList messagesList;
+    // Bluetooth chat helper
+    private BluetoothChatService mBluetoothChatService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,8 +66,10 @@ public class MessagesActivity extends DemoMessagesActivity
 
     @Override
     public boolean onSubmit(CharSequence input) {
-        super.messagesAdapter.addToStart(
-                MessagesFixtures.getTextMessage(input.toString()), true);
+        String content = input.toString();
+        mBluetoothChatService.sendTextMessage(content);
+//        super.messagesAdapter.addToStart(
+//                MessagesFixtures.getTextMessage(input.toString()), true);
         return true;
     }
 
@@ -73,6 +77,10 @@ public class MessagesActivity extends DemoMessagesActivity
     public void onAddAttachments() {
         super.messagesAdapter.addToStart(
                 MessagesFixtures.getImageMessage(), true);
+    }
+
+    protected void setBluetoothChatService(BluetoothChatService service) {
+        mBluetoothChatService = service;
     }
 
     private void initAdapter() {
