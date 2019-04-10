@@ -27,6 +27,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 import android.content.Context;
+import android.os.AsyncTask;
 import android.util.Log;
 
 import com.avast.android.dialogs.fragment.ProgressDialogFragment;
@@ -142,6 +143,8 @@ public class BluetoothChatService {
         mConnectThread = new ConnectThread(device);
         mConnectThread.start();
 
+
+
     }
 
     private byte[] castMessage2Byte(Message message) {
@@ -152,10 +155,6 @@ public class BluetoothChatService {
     protected Message castByte2Messsage(byte[] messageb) {
         Message message = null;
         return message;
-    }
-
-    protected void setMessagesAdapter(MessagesListAdapter adapter) {
-        mMessagesAdapter = adapter;
     }
 
     protected void onConnectionAccepted(BluetoothSocket socket) {
@@ -212,6 +211,8 @@ public class BluetoothChatService {
                     // This is a blocking call and will only return on a
                     // successful connection or an exception
                     socket = mmServerSocket.accept();
+                    // Add socket to socket manager
+                    mSocketManager.add(socket);
                 } catch (IOException e) {
                     Log.d(TAG, "accept() failed", e);
                     break;
@@ -233,7 +234,7 @@ public class BluetoothChatService {
         }
     }
 
-    private class ConnectThread extends Thread {
+    protected class ConnectThread extends Thread {
         private final BluetoothSocket mmSocket;
         private final BluetoothDevice mmDevice;
 
@@ -282,7 +283,7 @@ public class BluetoothChatService {
             }
 
             // Start the connected thread
-            //connected(mmSocket, mmDevice);
+            mSocketManager.add(mmSocket);
         }
 
         private void cancel() {
@@ -292,5 +293,26 @@ public class BluetoothChatService {
                 Log.e(TAG, "close() of connect socket failed", e);
             }
         }
+    }
+
+    private class ConnectAsyncTask extends AsyncTask<String, Integer, BluetoothSocket> {
+
+        @Override
+        protected void onPreExecute() {
+
+        }
+
+        @Override
+        protected BluetoothSocket doInBackground(String... address) {
+            BluetoothSocket socket = null;
+            return socket;
+        }
+
+        @Override
+        protected void onProgressUpdate(Integer... values) {
+
+        }
+
+
     }
 }

@@ -131,7 +131,8 @@ public class DeviceListActivity extends DemoDialogsActivity {
                 ProgressDialogFragment.createBuilder(DeviceListActivity.this,
                         getSupportFragmentManager())
                 .setCancelableOnTouchOutside(true)
-                .setMessage("Connecting")
+                .setTitle("Connecting")
+                .setMessage("Please wait")
                 .show();
 
         // Get the instance of device of the clicked dialog
