@@ -21,13 +21,18 @@
  * */
 package com.stfalcon.chatkit.sample.features.main;
 
+import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.support.v4.app.DialogFragment;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -55,6 +60,13 @@ import java.util.Set;
 public class DeviceListActivity extends DemoDialogsActivity {
     // Activity tag for logger
     private static final String TAG = "DeviceListActivity";
+
+    protected static final String TOAST = "toast";
+
+    protected static final int CONNECT_RESULT = 0;
+    protected static final int MESSAGE_WRITE = 1;
+    protected static final int MESSAGE_READ = 2;
+    protected static final int MESSAGE_TOAST = 4;
 
     // Request to enable bluetooth constant
     private static final int REQUEST_ENABLE_BT = 1;
@@ -96,7 +108,8 @@ public class DeviceListActivity extends DemoDialogsActivity {
         // Get instance of device list
         mDeviceMap = new HashMap<String, BluetoothDevice>();
         // Get instance of bluetooth chat service
-        mBluetoothChatService = new BluetoothChatService(mBluetoothAdapter, mDialogsAdapter);
+        mBluetoothChatService = new BluetoothChatService(this, mBluetoothAdapter
+                , mDialogsAdapter, mHandler);
 
         // Set dialogs list view
         mDialogsListView = (DialogsList) findViewById(R.id.devicelist);
@@ -127,31 +140,19 @@ public class DeviceListActivity extends DemoDialogsActivity {
     @Override
     public void onDialogClick(Dialog dialog) {
         // Display progress bar while connecting to remote device
-        android.support.v4.app.DialogFragment progressBar =
-                ProgressDialogFragment.createBuilder(DeviceListActivity.this,
-                        getSupportFragmentManager())
-                .setCancelableOnTouchOutside(true)
-                .setTitle("Connecting")
-                .setMessage("Please wait")
-                .show();
-
-        // Get the instance of device of the clicked dialog
         String address = dialog.getId();
         BluetoothDevice device = mDeviceMap.get(address);
 
-        try {
-            mBluetoothChatService.connect(device);
-        } catch (Exception e) {
-            // Connection failed, display connection fail notice to user
-            progressBar.dismiss();
-            Toast.makeText(this, "Connection failed, please try later!",
+        if (device == null) {
+            Log.d(TAG, "Clicked device does not exist!");
+            Toast.makeText(this, "Clicked device does not exist!",
                     Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Connection succeeded
-        progressBar.dismiss();
-        MessagesActivity.open(this);
+        ConnectAsyncTask connectAsyncTask = new ConnectAsyncTask();
+        connectAsyncTask.execute(device);
+        // Get the instance of device of the clicked dialog
     }
 
     @Override
@@ -212,6 +213,7 @@ public class DeviceListActivity extends DemoDialogsActivity {
 
         // unregister broadcast receiver
         unregisterReceiver(mBroadcastReceiver);
+        mBluetoothChatService.stop();
     }
 
     private void initAdapter() {
@@ -296,4 +298,61 @@ public class DeviceListActivity extends DemoDialogsActivity {
                 dialog.getDialogName(),
                 false);
     }
+
+    private class ConnectAsyncTask extends AsyncTask<BluetoothDevice, Boolean, Void> {
+
+        private DialogFragment mProgressDialog;
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            // Display progress dialog
+            mProgressDialog = ProgressDialogFragment.createBuilder(DeviceListActivity.this,
+                    getSupportFragmentManager())
+                    .setCancelableOnTouchOutside(false)
+                    .setTitle("Connecting")
+                    .setMessage("Please wait")
+                    .show();
+        }
+
+        @Override
+        protected Void doInBackground(BluetoothDevice... device) {
+            boolean result = mBluetoothChatService.onDialogsItemClicked(device[0]);
+            onProgressUpdate(result);
+
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(Boolean... values) {
+            mProgressDialog.dismiss();
+
+            if (values[0]) {
+                MessagesActivity.open(DeviceListActivity.this);
+            }
+        }
+    }
+
+    @SuppressLint("HandlerLeak")
+    private final Handler mHandler = new Handler() {
+
+        @Override
+        public void handleMessage(android.os.Message msg) {
+            switch(msg.what) {
+            case MESSAGE_READ:
+                byte[] readBuf = (byte[]) msg.obj;
+                mBluetoothChatService.onMessageReceived(readBuf);
+                break;
+            case MESSAGE_WRITE:
+                byte[] writeBuf = (byte[]) msg.obj;
+                mBluetoothChatService.onMessageSent(writeBuf);
+                break;
+            case MESSAGE_TOAST:
+                Toast.makeText(DeviceListActivity.this, msg.getData().toString(),
+                        Toast.LENGTH_SHORT).show();
+                break;
+            }
+        }
+    };
+
 }

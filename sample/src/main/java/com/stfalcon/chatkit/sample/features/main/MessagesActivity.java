@@ -67,7 +67,8 @@ public class MessagesActivity extends DemoMessagesActivity
     @Override
     public boolean onSubmit(CharSequence input) {
         String content = input.toString();
-        mBluetoothChatService.sendTextMessage(content);
+        Message message = MessagesFixtures.getTextMessage(input.toString());
+        mBluetoothChatService.onTextMessageSubmit(message);
 //        super.messagesAdapter.addToStart(
 //                MessagesFixtures.getTextMessage(input.toString()), true);
         return true;
