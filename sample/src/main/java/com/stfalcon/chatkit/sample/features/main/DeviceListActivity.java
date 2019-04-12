@@ -22,6 +22,7 @@
 package com.stfalcon.chatkit.sample.features.main;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
@@ -29,6 +30,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -37,11 +39,18 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.BaseAdapter;
 import android.widget.ImageView;
+import android.widget.SimpleAdapter;
 import android.widget.Toast;
 
 import com.avast.android.dialogs.fragment.ProgressDialogFragment;
 import com.avast.android.dialogs.fragment.SimpleDialogFragment;
+import com.avast.android.dialogs.iface.ISimpleDialogCancelListener;
+import com.avast.android.dialogs.iface.ISimpleDialogListener;
+import com.orhanobut.dialogplus.DialogPlus;
+import com.orhanobut.dialogplus.OnItemClickListener;
 import com.squareup.picasso.Picasso;
 import com.stfalcon.chatkit.commons.ImageLoader;
 import com.stfalcon.chatkit.dialogs.DialogsList;
@@ -57,6 +66,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import com.avast.android.dialogs.iface.ISimpleDialogCancelListener;
+
+import cn.pedant.SweetAlert.SweetAlertDialog;
+
 public class DeviceListActivity extends DemoDialogsActivity {
     // Activity tag for logger
     private static final String TAG = "DeviceListActivity";
@@ -70,6 +83,7 @@ public class DeviceListActivity extends DemoDialogsActivity {
 
     // Request to enable bluetooth constant
     private static final int REQUEST_ENABLE_BT = 1;
+    private static final int REQUEST_DISCOVERABLE = 2;
 
     // Bluetooth default adapter
     private BluetoothAdapter mBluetoothAdapter;
@@ -89,6 +103,8 @@ public class DeviceListActivity extends DemoDialogsActivity {
     private BluetoothChatService mBluetoothChatService;
 
     private Map<String, BluetoothDevice> mDeviceMap;
+    private MenuItem mScanItem;
+    private BluetoothChatProtocol mProtocal;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -107,9 +123,6 @@ public class DeviceListActivity extends DemoDialogsActivity {
         mDialogHandler = new DialogHandler();
         // Get instance of device list
         mDeviceMap = new HashMap<String, BluetoothDevice>();
-        // Get instance of bluetooth chat service
-        mBluetoothChatService = new BluetoothChatService(this, mBluetoothAdapter
-                , mDialogsAdapter, mHandler);
 
         // Set dialogs list view
         mDialogsListView = (DialogsList) findViewById(R.id.devicelist);
@@ -121,7 +134,7 @@ public class DeviceListActivity extends DemoDialogsActivity {
         if (mBluetoothAdapter != null) {
             Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
             for (BluetoothDevice device : pairedDevices) {
-                onNewDialog(mDialogHandler.getDialogFromDevice(device));
+                mDialogsAdapter.addItem(mDialogHandler.getDialogFromDevice(device));
                 mDeviceMap.put(device.getAddress(), device);
                 //mBluetoothChatService
             }
@@ -135,6 +148,35 @@ public class DeviceListActivity extends DemoDialogsActivity {
         // Register discovery finished receiver
         filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
         registerReceiver(mBroadcastReceiver, filter);
+
+        mBluetoothChatService = new BluetoothChatService(this, mBluetoothAdapter,
+                mDialogsAdapter, mHandler);
+
+        mHandler.postDelayed(new Runnable() {
+
+            @Override
+            public void run() {
+                if (mBluetoothAdapter == null) {
+                    SweetAlertDialog pDialog = new SweetAlertDialog(DeviceListActivity.this,
+                            SweetAlertDialog.ERROR_TYPE);
+                    pDialog.setTitleText("Error");
+                    pDialog.setContentText("Bluetooth not available on this device!");
+                    pDialog.setConfirmText("confirm");
+                    pDialog.setConfirmClickListener(new SweetAlertDialog.OnSweetClickListener() {
+
+                        @Override
+                        public void onClick(SweetAlertDialog sweetAlertDialog) {
+                            finish();
+                        }
+                    });
+                    pDialog.show();
+                }
+                else {
+                    // Make the device discoverable to remote bluetooth devices
+                    makeDiscoverable();
+                }
+            }
+        }, 1000);
     }
 
     @Override
@@ -159,43 +201,28 @@ public class DeviceListActivity extends DemoDialogsActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.device_list_menu, menu);
+
+        mScanItem = menu.findItem(R.id.scan);
         return true;
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item){
+    public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.scan:
+                mScanItem = item;
                 if (item.getTitle() == getString(R.string.scan_option)) {
-                    if (mBluetoothAdapter == null) {
-                        // Display alert dialog
-                        SimpleDialogFragment.createBuilder(this,
-                                getSupportFragmentManager())
-                                .setTitle("Error")
-                                .setMessage("Bluetooth service is not available!")
-                                .setNegativeButtonText("Confirm")
-                                .show();
-                        Log.d(TAG, "Bluetooth service is not available");
-                        // Dismiss the main activity
-                        break;
-                    }
-
-                    // Make the device discoverable to remote bluetooth devices
-                    makeDiscoverable();
+                    mScanItem.setTitle(R.string.stop_scan_option);
+                    setProgressBarIndeterminateVisibility(true);
                     // Start discovery
-                    runDiscovery();
-
-                    // Display progressbar and switch the title of option to stop
-                    setProgressBarVisibility(true);
-                    item.setTitle(getString(R.string.stop_scan_option));
+                    doDiscovery();
                 }
                 else if (item.getTitle() == getString(R.string.stop_scan_option)) {
                     // Cancel discovery process
                     mBluetoothAdapter.cancelDiscovery();
 
                     // Dismiss progressbar, witch the title to scan
-                    setProgressBarVisibility(false);
-                    item.setTitle(getString(R.string.scan_option));
+                    mScanItem.setTitle(getString(R.string.scan_option));
                 }
                 break;
         }
@@ -218,7 +245,7 @@ public class DeviceListActivity extends DemoDialogsActivity {
 
     private void initAdapter() {
         mDialogsAdapter = new DialogsListAdapter<>(imageLoader);
-        mDialogsAdapter.setItems(DialogsFixtures.getDialogs());
+        //mDialogsAdapter.setItems(DialogsFixtures.getDialogs());
         //onNewDialog(getDemoDialog());
 
         mDialogsAdapter.setOnDialogClickListener(this);
@@ -235,10 +262,6 @@ public class DeviceListActivity extends DemoDialogsActivity {
         }
     }
 
-    //for example
-    private void onNewDialog(Dialog dialog) {
-        mDialogsAdapter.addItem(dialog);
-    }
 
     // Bluetooth broadcast receiver
     protected class BluetoothReceiver extends BroadcastReceiver {
@@ -247,19 +270,19 @@ public class DeviceListActivity extends DemoDialogsActivity {
         public void onReceive(Context context, Intent intent) {
             // Inform user that a remote device has been discovered
             String action = intent.getAction();
-
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 // Display remote device information
                 BluetoothDevice newDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 
                 // Add a new dialog if new device is found
                 if (newDevice.getBondState() != BluetoothDevice.BOND_BONDED) {
-                    onNewDialog(mDialogHandler.getDialogFromDevice(newDevice));
+                    mDialogsAdapter.addItem(mDialogHandler.getDialogFromDevice(newDevice));
                     // Add new device to the list
                     mDeviceMap.put(newDevice.getAddress(), newDevice);
                 }
             }
             else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
+                mScanItem.setTitle(R.string.scan_option);
             }
         }
     }
@@ -267,28 +290,51 @@ public class DeviceListActivity extends DemoDialogsActivity {
     // Make the device discoverable to remote bluetooth devices
     protected void makeDiscoverable() {
         Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-        intent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 0);
-        startActivity(intent);
+        intent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
+        startActivityForResult(intent, REQUEST_DISCOVERABLE);
     }
 
-    // Bluetooth adapter discovery caller
-    private void runDiscovery() {
-        // This device support bluetooth service, but is disabled
-        if (mBluetoothAdapter.isEnabled()) {
+    private void doDiscovery() {
+        if (mBluetoothAdapter.isDiscovering()) { mBluetoothAdapter.cancelDiscovery(); }
+
+        if (!mBluetoothAdapter.isEnabled()) {
             Intent enableBlutooth = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBlutooth, REQUEST_ENABLE_BT);
         }
-
-        Toast.makeText(DeviceListActivity.this,
-                "scanning", Toast.LENGTH_SHORT).show();
-        Log.d(TAG, "Start scanning");
-
-        // Cancel proceeding discovery procedure
-        if (mBluetoothAdapter.isDiscovering()) {
-            mBluetoothAdapter.cancelDiscovery();
+        else {
+            mBluetoothAdapter.startDiscovery();
         }
+    }
 
-        mBluetoothAdapter.startDiscovery();
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch(requestCode) {
+        case REQUEST_ENABLE_BT:
+            // When the request to enable Bluetooth returns
+            if (resultCode == Activity.RESULT_OK) {
+                // Bluetooth is now enabled, so set up a chat session
+                mBluetoothAdapter.startDiscovery();
+                //setProgressBarVisibility(true);
+            } else {
+                // User did not enable Bluetooth or an error occured
+                Log.d(TAG, "BT not enabled");
+                Toast.makeText(this, "Bluetooth service not enabled!",
+                        Toast.LENGTH_SHORT).show();
+                mScanItem.setTitle(R.string.scan_option);
+                setProgressBarIndeterminateVisibility(false);
+            }
+            break;
+        case REQUEST_DISCOVERABLE:
+            if (resultCode != Activity.RESULT_CANCELED) {
+                Toast.makeText(this, "This device is now discoverable!",
+                        Toast.LENGTH_SHORT).show();
+                mBluetoothChatService.start();
+            } else {
+                Log.d(TAG, "Device not discoverable");
+                Toast.makeText(this, "Request for discoverability denied!",
+                        Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
     @Override
@@ -340,19 +386,25 @@ public class DeviceListActivity extends DemoDialogsActivity {
         public void handleMessage(android.os.Message msg) {
             switch(msg.what) {
             case MESSAGE_READ:
+                //String address =
+                //BluetoothDevice device = mDeviceMap.get(address);
                 byte[] readBuf = (byte[]) msg.obj;
-                mBluetoothChatService.onMessageReceived(readBuf);
+                Object msgo = mProtocal.getMessageFromByteArray(readBuf);
+                if (msgo instanceof String) {
+                    //Message message = new Message(
+                    //
+                    //);
+                }
+                //mBluetoothChatService.onMessageReceived(message, device);
                 break;
             case MESSAGE_WRITE:
-                byte[] writeBuf = (byte[]) msg.obj;
-                mBluetoothChatService.onMessageSent(writeBuf);
                 break;
             case MESSAGE_TOAST:
-                Toast.makeText(DeviceListActivity.this, msg.getData().toString(),
+                String content = msg.getData().getString(DeviceListActivity.TOAST);
+                Toast.makeText(DeviceListActivity.this, content,
                         Toast.LENGTH_SHORT).show();
                 break;
             }
         }
     };
-
 }

@@ -27,12 +27,10 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 import android.content.Context;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 
-import com.avast.android.dialogs.fragment.ProgressDialogFragment;
 import com.stfalcon.chatkit.dialogs.DialogsListAdapter;
 import com.stfalcon.chatkit.messages.MessagesListAdapter;
 import com.stfalcon.chatkit.sample.common.data.model.Dialog;
@@ -42,13 +40,9 @@ import com.stfalcon.chatkit.sample.common.data.model.User;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.Queue;
 import java.util.UUID;
 
 public class BluetoothChatService {
@@ -66,7 +60,7 @@ public class BluetoothChatService {
     // Message list view adapter
     protected MessagesListAdapter<Message> mMessagesAdapter;
     // Chat message history handler
-    protected MessageHandler mMessageHandler;
+    private MessageHandler mMessageHandler;
     // Bluetooth adapter
     private BluetoothAdapter mBluetoothAdapter;
 
@@ -88,7 +82,8 @@ public class BluetoothChatService {
     // Socket manager
     private Map<String, ConnectedThread> mSockets;
     private LinkedList<String> mSocketsQueue;
-    protected Handler mHandler;
+    private Handler mHandler;
+    private BluetoothChatProtocol mProtocol;
 
     protected BluetoothChatService(Context context, BluetoothAdapter btadapter,
                                    DialogsListAdapter<Dialog> adapter, Handler handler) {
@@ -115,9 +110,10 @@ public class BluetoothChatService {
         mSockets = new HashMap<String, ConnectedThread>();
         mSocketsQueue = new LinkedList<>();
         mHandler = handler;
+        mProtocol = new BluetoothChatProtocol();
     }
 
-    protected synchronized void connect(BluetoothSocket socket) {
+    private synchronized void connect(BluetoothSocket socket) {
         BluetoothDevice device = socket.getRemoteDevice();
         ConnectedThread connection = new ConnectedThread(socket, device);
 
@@ -167,7 +163,7 @@ public class BluetoothChatService {
 
         mAcceptThread = new AcceptThread();
         mAcceptThread.start();
-
+        mDeviceAddressNow = device.getAddress();
         return result;
     }
 
@@ -189,7 +185,6 @@ public class BluetoothChatService {
 
         if (index == -1) {
             Log.d(TAG, "socketQueueReorder() target connection does not exist in queue!");
-            return;
         }
         else {
             mSocketsQueue.remove(index);
@@ -197,7 +192,7 @@ public class BluetoothChatService {
         }
     }
 
-    protected void onTextMessageSubmit(Message message) {
+    protected synchronized void onTextMessageSubmit(Message message) {
         ConnectedThread thread = mSockets.get(mDeviceAddressNow);
         if (thread == null) {
             Log.d(TAG,"onTextMessageSubmit() connection do not exist!");
@@ -210,35 +205,43 @@ public class BluetoothChatService {
             mHandler.sendMessage(msg);
         }
 
-        byte[] msgb = toArraybyte(message);
+        byte[] msgb = mProtocol.getByteArrayFromTextMessage(message);
         thread.write(msgb);
+
+        mDialogsAdapter.updateDialogWithMessage(mDeviceAddressNow, message);
+        mMessagesAdapter.addToStart(message, true);
+        mMessageHandler.addHistory(mDeviceAddressNow, message);
     }
 
-    protected void onMessageReceived(byte[] msgb) {
+    protected synchronized void onAttachmentMessageSubmit(Message message) {
+        ConnectedThread thread = mSockets.get(mDeviceAddressNow);
+        if (thread == null) {
+            Log.d(TAG,"onAttachmentMessageSubmit() connection do not exist!");
 
+            android.os.Message msg = mHandler.obtainMessage(DeviceListActivity.MESSAGE_TOAST);
+            Bundle bundle = new Bundle();
+            bundle.putString(DeviceListActivity.TOAST, "Connection do not exist!");
+            msg.setData(bundle);
+
+            mHandler.sendMessage(msg);
+        }
+
+        byte[] msgb = mProtocol.getByteArrayFromImageMwssage(message);
+        thread.write(msgb);
+
+        mDialogsAdapter.updateDialogWithMessage(mDeviceAddressNow, message);
+        mMessagesAdapter.addToStart(message, true);
+        mMessageHandler.addHistory(mDeviceAddressNow, message);
     }
 
-    protected void onMessageSent(byte[] msgb) {
+    protected synchronized void onMessageReceived(Message message) {
+        String address = message.getId();
 
-    }
-
-    protected void updateMessages(String address, Message message) {
-        // Add message to message history handler
-        mMessageHandler.addHistory(address, message);
-        // Update device list dialogs
         mDialogsAdapter.updateDialogWithMessage(address, message);
-    }
-
-    private byte[] toArraybyte(Message message) {
-        return null;
-    }
-
-    protected Message toMessage(byte[] buffer) {
-        return null;
-    }
-
-    protected void addNewMessageHistory(String address) {
-        mMessageHandler.addNewHistory(address, null);
+        mMessageHandler.addHistory(address, message);
+        if (address.equals(mDeviceAddressNow)) {
+            mMessagesAdapter.addToStart(message, true);
+        }
     }
 
     private class AcceptThread extends Thread {
@@ -429,6 +432,7 @@ public class BluetoothChatService {
                 mHandler.sendMessage(msg);
             }
         }
+
         public void cancel() {
             try {
                 mmSocket.close();

@@ -56,5 +56,6 @@ dependencies {
     implementation 'com.avast:android-styled-dialogs:2.3.3'
     implementation 'com.longsh:OptionFrame:1.0.0'
     implementation 'com.android.support:mediarouter-v7:27.1.1'
-
+    implementation 'com.orhanobut:dialogplus:1.11@aar'
+    implementation 'cn.pedant.sweetalert:library:1.3'
 }
