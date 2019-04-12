@@ -8,6 +8,8 @@
         android:title="@string/scan_option"
         app:showAsAction="always"/>
 
-    <item android:title="About" />
+    <item
+        android:id="@+id/about"
+        android:title="About" />
 
 </menu>

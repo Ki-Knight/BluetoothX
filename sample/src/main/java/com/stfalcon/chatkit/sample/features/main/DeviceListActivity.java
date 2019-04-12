@@ -62,6 +62,7 @@ import com.stfalcon.chatkit.sample.common.data.model.Message;
 import com.stfalcon.chatkit.sample.features.demo.DemoDialogsActivity;
 import com.stfalcon.chatkit.sample.utils.AppUtils;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -75,6 +76,8 @@ public class DeviceListActivity extends DemoDialogsActivity {
     private static final String TAG = "DeviceListActivity";
 
     protected static final String TOAST = "toast";
+    protected static final String BUFFER = "buffer";
+    protected static final String ADDRESS = "address";
 
     protected static final int CONNECT_RESULT = 0;
     protected static final int MESSAGE_WRITE = 1;
@@ -174,6 +177,7 @@ public class DeviceListActivity extends DemoDialogsActivity {
                 else {
                     // Make the device discoverable to remote bluetooth devices
                     makeDiscoverable();
+                    mBluetoothChatService.start();
                 }
             }
         }, 1000);
@@ -224,6 +228,10 @@ public class DeviceListActivity extends DemoDialogsActivity {
                     // Dismiss progressbar, witch the title to scan
                     mScanItem.setTitle(getString(R.string.scan_option));
                 }
+                break;
+            case R.id.about:
+                Intent intent = new Intent(this, AboutPageActivity.class);
+                startActivity(intent);
                 break;
         }
         return super.onOptionsItemSelected(item);
@@ -347,18 +355,25 @@ public class DeviceListActivity extends DemoDialogsActivity {
 
     private class ConnectAsyncTask extends AsyncTask<BluetoothDevice, Boolean, Void> {
 
-        private DialogFragment mProgressDialog;
+        private SweetAlertDialog mmProgressDialog;
 
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
             // Display progress dialog
-            mProgressDialog = ProgressDialogFragment.createBuilder(DeviceListActivity.this,
-                    getSupportFragmentManager())
-                    .setCancelableOnTouchOutside(false)
-                    .setTitle("Connecting")
-                    .setMessage("Please wait")
-                    .show();
+            mmProgressDialog = new SweetAlertDialog(DeviceListActivity.this,
+                    SweetAlertDialog.PROGRESS_TYPE);
+            mmProgressDialog.setTitleText("connecting");
+            mmProgressDialog.setContentText("Please wait");
+            mmProgressDialog.setCancelable(false);
+            mmProgressDialog.getProgressHelper().setBarColor(R.color.material_blue_grey_80);
+            mmProgressDialog.show();
+//            mProgressDialog = ProgressDialogFragment.createBuilder(DeviceListActivity.this,
+//                    getSupportFragmentManager())
+//                    .setCancelableOnTouchOutside(false)
+//                    .setTitle("Connecting")
+//                    .setMessage("Please wait")
+//                    .show();
         }
 
         @Override
@@ -371,7 +386,7 @@ public class DeviceListActivity extends DemoDialogsActivity {
 
         @Override
         protected void onProgressUpdate(Boolean... values) {
-            mProgressDialog.dismiss();
+            mmProgressDialog.dismiss();
 
             if (values[0]) {
                 MessagesActivity.open(DeviceListActivity.this);
@@ -386,16 +401,21 @@ public class DeviceListActivity extends DemoDialogsActivity {
         public void handleMessage(android.os.Message msg) {
             switch(msg.what) {
             case MESSAGE_READ:
-                //String address =
-                //BluetoothDevice device = mDeviceMap.get(address);
-                byte[] readBuf = (byte[]) msg.obj;
-                Object msgo = mProtocal.getMessageFromByteArray(readBuf);
-                if (msgo instanceof String) {
-                    //Message message = new Message(
-                    //
-                    //);
-                }
-                //mBluetoothChatService.onMessageReceived(message, device);
+//                Bundle bundle = msg.getData();
+//                byte[] readBuf = bundle.getByteArray(BUFFER);
+//                String address = bundle.getString(ADDRESS);
+//
+//                Date date =
+//
+//                BluetoothDevice device = mDeviceMap.get(address);
+//                Object msgo = mProtocal.getMessageFromByteArray(readBuf);
+//                if (msgo instanceof String) {
+//                    Message message = new Message(
+//                            address,
+//
+//                    );
+//                }
+//                mBluetoothChatService.onMessageReceived(message, device);
                 break;
             case MESSAGE_WRITE:
                 break;

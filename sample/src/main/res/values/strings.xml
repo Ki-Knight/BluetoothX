@@ -34,5 +34,8 @@
 
     <string name="scan_option">scan</string>
     <string name="stop_scan_option">stop</string>
-
+    <string name="copy_right" translatable="false">Copyrights %1$d</string>
+    <string name="about_desciption">BluetoothX is an open source android application developed for education
+    purpose, redistribution or modification of it is allowed under the terms of the GNU General Public Licence
+    published by the Free Software Foundation, either version 3 or later version.</string>
 </resources>

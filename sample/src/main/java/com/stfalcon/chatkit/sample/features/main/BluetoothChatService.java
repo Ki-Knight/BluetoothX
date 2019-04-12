@@ -76,7 +76,7 @@ public class BluetoothChatService {
 
     // The address of now interacting device
     private String mDeviceAddressNow = null;
-    private final User mUserSelf;
+    private User mUserSelf;
     private Context mcontext;
 
     // Socket manager
@@ -97,15 +97,6 @@ public class BluetoothChatService {
         // Start server connection listener service
         mState = SERVER_CONNECTING;
 
-        // Set the user information of local bluetooth device
-        User temp = new User(
-                btadapter.getAddress(),
-                btadapter.getName(),
-                null,
-                true
-        );
-        mUserSelf = temp;
-
         // Initialize socket manager
         mSockets = new HashMap<String, ConnectedThread>();
         mSocketsQueue = new LinkedList<>();
@@ -123,6 +114,16 @@ public class BluetoothChatService {
 
     protected synchronized void start() {
         Log.d(TAG, "Bluetooth chat service started!");
+
+        // Set the user information of local bluetooth device
+        User temp = new User(
+                mBluetoothAdapter.getAddress(),
+                mBluetoothAdapter.getName(),
+                null,
+                true
+        );
+        mUserSelf = temp;
+
         if (mConnecter != null) { mConnecter.cancel(); mConnecter = null; }
         for (Map.Entry<String, ConnectedThread> entry: mSockets.entrySet()) {
             if (entry.getValue() != null) {
@@ -400,8 +401,13 @@ public class BluetoothChatService {
                         // Cast binary array to message instance
                         //Message message = mChatService.castByte2Messsage(buffer);
                         //mChatService.updateMessages(mmDevice.getAddress(), message);
-                        mHandler.obtainMessage(DeviceListActivity.MESSAGE_READ, bytes, -1, buffer)
-                                .sendToTarget();
+                        android.os.Message msg = mHandler.obtainMessage(DeviceListActivity.MESSAGE_READ);
+                        Bundle bundle = new Bundle();
+                        bundle.putByteArray(DeviceListActivity.BUFFER, buffer);
+                        bundle.putString(DeviceListActivity.ADDRESS, mmDevice.getAddress());
+                        msg.setData(bundle);
+
+                        mHandler.sendMessage(msg);
                     }
                 } catch (IOException e) {
                     Log.e(TAG, "disconnected", e);
