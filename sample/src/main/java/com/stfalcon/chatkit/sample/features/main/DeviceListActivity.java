@@ -277,14 +277,6 @@ public class DeviceListActivity extends DemoDialogsActivity {
         mDialogsListView.setAdapter(mDialogsAdapter);
     }
 
-    //for example
-    private void onNewMessage(String dialogId, Message message) {
-        boolean isUpdated = mDialogsAdapter.updateDialogWithMessage(dialogId, message);
-        if (!isUpdated) {
-            //Dialog with this ID doesn't exist, so you can create new Dialog or update all dialogs list
-        }
-    }
-
     // Bluetooth broadcast receiver
     protected class BluetoothReceiver extends BroadcastReceiver {
 

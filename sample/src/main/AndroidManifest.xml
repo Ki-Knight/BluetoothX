@@ -53,6 +53,12 @@
         <activity
             android:name=".features.main.AboutPageActivity"
             android:theme="@style/BlueTheme"/>
+        <activity
+            android:name=".features.main.group.BluetoothChatGroup"
+            android:theme="@style/BlueTheme"/>
+        <activity
+            android:name=".features.main.group.DeviceListGroup"
+            android:theme="@style/BlueTheme"/>
 
     </application>
 

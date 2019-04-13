@@ -80,7 +80,7 @@ public class DialogHandler {
         );
     }
 
-    protected ArrayList<User> getUsersFromDevice(BluetoothDevice device, boolean self) {
+    public ArrayList<User> getUsersFromDevice(BluetoothDevice device, boolean self) {
         ArrayList<User> arrayList = new ArrayList<>();
         arrayList.add(new User(
                 self ? "0" : "1",
@@ -92,7 +92,7 @@ public class DialogHandler {
         return arrayList;
     }
 
-    protected Message getTextMessageFromString(String msgs, String address,
+    public Message getTextMessageFromString(String msgs, String address,
                                                ArrayList<User> users, Date date) {
         return new Message(
                 address,

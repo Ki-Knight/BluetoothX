@@ -22,39 +22,47 @@ public class BluetoothXApplication extends Application {
         mBluetoothChatService = service;
     }
 
-    protected BluetoothChatService getBluetoothChatService() {
+    public BluetoothChatService getBluetoothChatService() {
         return mBluetoothChatService;
     }
 
-    protected void setMessagesAdapter(MessagesListAdapter adapter) {
+    public void setMessagesAdapter(MessagesListAdapter adapter) {
         mMessagesAdapter = adapter;
     }
 
-    protected MessagesListAdapter getMessagesAdapter() {
+    public MessagesListAdapter getMessagesAdapter() {
         return mMessagesAdapter;
     }
 
-    protected void setDialogsAdapter(DialogsListAdapter adapter) {
+    public void setDialogsAdapter(DialogsListAdapter adapter) {
         mDialogsAdapter = adapter;
     }
 
-    protected DialogsListAdapter geetDialogsAdapter() {
+    public DialogsListAdapter geetDialogsAdapter() {
         return mDialogsAdapter;
     }
 
-    protected void setMessageHandler (MessageHandler handler) {
+    public void setMessageHandler (MessageHandler handler) {
         mMessageHandler = handler;
     }
 
-    protected MessageHandler getMessageHandler () {
+    public MessageHandler getMessageHandler () {
         return mMessageHandler;
     }
 
-    protected void setHandler(Handler handler) {
+    public void setHandler(Handler handler) {
         mHandler = handler;
     }
 
-    protected Handler getHandler() {
+    public Handler getHandler() {
         return mHandler;
+    }
+
+    public void clear() {
+        mBluetoothChatService = null;
+        mMessageHandler = null;
+        mDialogsAdapter = null;
+        mMessageHandler = null;
+        mHandler = null;
     }
 }

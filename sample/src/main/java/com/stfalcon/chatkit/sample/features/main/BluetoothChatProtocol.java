@@ -32,7 +32,7 @@ public class BluetoothChatProtocol {
     private static final int MESSAGE_TYPE_TEXT = 0;
     private static final int MESSAGE_TYPE_IMAGE = 1;
 
-    protected BluetoothChatProtocol() { }
+    public BluetoothChatProtocol() { }
 
     private int byteArray2Integer(byte[] buffer, int index) {
         return  buffer[index + 3] & 0xFF |
@@ -76,7 +76,7 @@ public class BluetoothChatProtocol {
         System.arraycopy(encoded, 0, buffer, index, length);
     }
 
-    protected byte[] getByteArrayFromString(String string) {
+    private byte[] getByteArrayFromString(String string) {
         byte[] code = string.getBytes();
         byte[] encoded = Base64.encode(code, Base64.DEFAULT);
         int length = encoded.length;
@@ -89,7 +89,7 @@ public class BluetoothChatProtocol {
         return buffer;
     }
 
-    protected byte[] getByteArrayFromTextMessage(Message message) {
+    public byte[] getByteArrayFromTextMessage(Message message) {
         String string = message.getText();
 
         byte[] sb = getByteArrayFromString(string);
@@ -102,11 +102,11 @@ public class BluetoothChatProtocol {
         return buffer;
     }
 
-    protected byte[] getByteArrayFromImageMwssage(Message message) {
+    public byte[] getByteArrayFromImageMwssage(Message message) {
         return null;
     }
 
-    protected Object getMessageFromByteArray(byte[] buffer) {
+    public Object getMessageFromByteArray(byte[] buffer) {
         int index = 0;
         int dataType = byteArray2Integer(buffer, index);
         index += 4;
