@@ -25,8 +25,10 @@ package com.stfalcon.chatkit.sample.features.main;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.View;
+import android.widget.Toast;
 
 import com.stfalcon.chatkit.messages.MessageInput;
 import com.stfalcon.chatkit.messages.MessagesList;
@@ -37,23 +39,32 @@ import com.stfalcon.chatkit.sample.common.data.model.Message;
 import com.stfalcon.chatkit.sample.features.demo.DemoMessagesActivity;
 import com.stfalcon.chatkit.sample.utils.AppUtils;
 
+import java.util.ArrayList;
+
 public class MessagesActivity extends DemoMessagesActivity
         implements MessageInput.InputListener,
         MessageInput.AttachmentsListener,
         MessageInput.TypingListener {
 
-    public static void open(Context context) {
-        context.startActivity(new Intent(context, MessagesActivity.class));
+    public static void open(Context context, String address) {
+        Intent intent = new Intent(context, MessagesActivity.class);
+        intent.putExtra("address", address);
+        context.startActivity(intent);
     }
 
     private MessagesList messagesList;
     // Bluetooth chat helper
     private BluetoothChatService mBluetoothChatService;
+    private ArrayList<Message> mMessageHistory;
+    private Handler mHandler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.messages_activity);
+
+        Intent intent = getIntent();
+        String address = intent.getStringExtra("address");
 
         this.messagesList = (MessagesList) findViewById(R.id.messagesList);
         initAdapter();
@@ -66,6 +77,13 @@ public class MessagesActivity extends DemoMessagesActivity
         BluetoothXApplication app = (BluetoothXApplication)getApplication();
         mBluetoothChatService = app.getBluetoothChatService();
         app.setMessagesAdapter(messagesAdapter);
+
+        mHandler = app.getHandler();
+
+        mMessageHistory = app.getMessageHandler().getHistory(address);
+        if (mMessageHistory != null) {
+            loadMessageHistory();
+        }
     }
 
     @Override
@@ -81,10 +99,6 @@ public class MessagesActivity extends DemoMessagesActivity
     public void onAddAttachments() {
         super.messagesAdapter.addToStart(
                 MessagesFixtures.getImageMessage(), true);
-    }
-
-    protected void setBluetoothChatService(BluetoothChatService service) {
-        mBluetoothChatService = service;
     }
 
     private void initAdapter() {
@@ -112,5 +126,19 @@ public class MessagesActivity extends DemoMessagesActivity
     @Override
     public void onStopTyping() {
         Log.v("Typing listener", getString(R.string.stop_typing_status));
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+
+        android.os.Message msg = mHandler.obtainMessage(DeviceListActivity.DIALOG_DISMISS);
+        mHandler.sendMessage(msg);
+    }
+
+    private void loadMessageHistory() {
+        for (Message message : mMessageHistory) {
+            messagesAdapter.addToStart(message, false);
+        }
     }
 }

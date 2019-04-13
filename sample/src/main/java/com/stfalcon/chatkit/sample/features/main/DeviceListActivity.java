@@ -81,10 +81,11 @@ public class DeviceListActivity extends DemoDialogsActivity {
     protected static final String BUFFER = "buffer";
     protected static final String ADDRESS = "address";
 
-    protected static final int CONNECT_RESULT = 0;
+    protected static final int NEW_CONNECTION = 0;
     protected static final int MESSAGE_WRITE = 1;
     protected static final int MESSAGE_READ = 2;
     protected static final int MESSAGE_TOAST = 4;
+    protected static final int DIALOG_DISMISS = 5;
 
     // Request to enable bluetooth constant
     private static final int REQUEST_ENABLE_BT = 1;
@@ -103,6 +104,7 @@ public class DeviceListActivity extends DemoDialogsActivity {
 
     // Dialog generator
     private DialogHandler mDialogHandler;
+    private MessageHandler mMessageHandler;
 
     // Bluetooth chat interface
     private BluetoothChatService mBluetoothChatService;
@@ -129,6 +131,7 @@ public class DeviceListActivity extends DemoDialogsActivity {
         mDialogHandler = new DialogHandler();
         // Get instance of device list
         mDeviceMap = new HashMap<String, BluetoothDevice>();
+        mMessageHandler = new MessageHandler();
 
         // Set dialogs list view
         mDialogsListView = (DialogsList) findViewById(R.id.devicelist);
@@ -142,6 +145,7 @@ public class DeviceListActivity extends DemoDialogsActivity {
             for (BluetoothDevice device : pairedDevices) {
                 mDialogsAdapter.addItem(mDialogHandler.getDialogFromDevice(device));
                 mDeviceMap.put(device.getAddress(), device);
+                mMessageHandler.addNewHistory(device.getAddress(), null);
                 //mBluetoothChatService
             }
         }
@@ -156,6 +160,8 @@ public class DeviceListActivity extends DemoDialogsActivity {
         registerReceiver(mBroadcastReceiver, filter);
 
         mApp = (BluetoothXApplication)getApplication();
+        mApp.setMessageHandler(mMessageHandler);
+
         mBluetoothChatService = new BluetoothChatService(mApp, mBluetoothAdapter,
                 mDialogsAdapter, mHandler);
         mApp.setBluetoothChatService(mBluetoothChatService);
@@ -187,12 +193,15 @@ public class DeviceListActivity extends DemoDialogsActivity {
                 }
             }
         }, 1000);
+        mApp.setHandler(mHandler);
     }
 
     @Override
     public void onDialogClick(Dialog dialog) {
         // Display progress bar while connecting to remote device
         String address = dialog.getId();
+        dialog.setUnreadCount(0);
+        mDialogsAdapter.updateItemById(dialog);
         BluetoothDevice device = mDeviceMap.get(address);
 
         if (device == null) {
@@ -292,6 +301,7 @@ public class DeviceListActivity extends DemoDialogsActivity {
                     mDialogsAdapter.addItem(mDialogHandler.getDialogFromDevice(newDevice));
                     // Add new device to the list
                     mDeviceMap.put(newDevice.getAddress(), newDevice);
+                    mMessageHandler.addNewHistory(newDevice.getAddress(), null);
                 }
             }
             else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
@@ -361,6 +371,7 @@ public class DeviceListActivity extends DemoDialogsActivity {
     private class ConnectAsyncTask extends AsyncTask<BluetoothDevice, Boolean, Void> {
 
         private SweetAlertDialog mmProgressDialog;
+        private BluetoothDevice mmDevice;
 
         @Override
         protected void onPreExecute() {
@@ -377,6 +388,7 @@ public class DeviceListActivity extends DemoDialogsActivity {
 
         @Override
         protected Void doInBackground(BluetoothDevice... device) {
+            mmDevice = device[0];
             boolean result = mBluetoothChatService.onDialogsItemClicked(device[0]);
             onProgressUpdate(result);
 
@@ -388,7 +400,10 @@ public class DeviceListActivity extends DemoDialogsActivity {
             mmProgressDialog.dismiss();
 
             if (values[0]) {
-                MessagesActivity.open(DeviceListActivity.this);
+                android.os.Message msg = mHandler.obtainMessage(NEW_CONNECTION);
+                mHandler.sendMessage(msg);
+
+                MessagesActivity.open(DeviceListActivity.this, mmDevice.getAddress());
             }
         }
     }
@@ -399,6 +414,9 @@ public class DeviceListActivity extends DemoDialogsActivity {
         @Override
         public void handleMessage(android.os.Message msg) {
             switch(msg.what) {
+            case NEW_CONNECTION:
+                mBluetoothChatService.clearRedundantConnection();
+                break;
             case MESSAGE_READ:
                 Bundle bundle = msg.getData();
                 byte[] readBuf = bundle.getByteArray(BUFFER);
@@ -414,6 +432,7 @@ public class DeviceListActivity extends DemoDialogsActivity {
                             mDialogHandler.getUsersFromDevice(device, false), date);
                     mBluetoothChatService.onMessageReceived(message);
                 }
+                mBluetoothChatService.socketQueueReorder(address);
                 break;
             case MESSAGE_WRITE:
                 break;
@@ -421,6 +440,9 @@ public class DeviceListActivity extends DemoDialogsActivity {
                 String content = msg.getData().getString(DeviceListActivity.TOAST);
                 Toast.makeText(DeviceListActivity.this, content,
                         Toast.LENGTH_SHORT).show();
+                break;
+            case DIALOG_DISMISS:
+                mBluetoothChatService.setDeviceAddressToNull();
                 break;
             }
         }

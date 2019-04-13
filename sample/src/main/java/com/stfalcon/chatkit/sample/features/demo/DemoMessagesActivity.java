@@ -55,7 +55,7 @@ public abstract class DemoMessagesActivity extends AppCompatActivity
     @Override
     protected void onStart() {
         super.onStart();
-        messagesAdapter.addToStart(MessagesFixtures.getTextMessage(), true);
+        //messagesAdapter.addToStart(MessagesFixtures.getTextMessage(), true);
     }
 
     @Override
@@ -92,9 +92,9 @@ public abstract class DemoMessagesActivity extends AppCompatActivity
     @Override
     public void onLoadMore(int page, int totalItemsCount) {
         Log.i("TAG", "onLoadMore: " + page + " " + totalItemsCount);
-        if (totalItemsCount < TOTAL_MESSAGES_COUNT) {
-            loadMessages();
-        }
+//        if (totalItemsCount < TOTAL_MESSAGES_COUNT) {
+//            loadMessages();
+//        }
     }
 
     @Override

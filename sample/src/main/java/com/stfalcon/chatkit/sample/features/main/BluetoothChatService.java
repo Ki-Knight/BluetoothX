@@ -104,7 +104,8 @@ public class BluetoothChatService {
         mHandler = handler;
         mProtocol = new BluetoothChatProtocol();
         mApp = app;
-        mMessageHandler = new MessageHandler();
+
+        mMessageHandler = mApp.getMessageHandler();
     }
 
     private synchronized void connect(BluetoothSocket socket) {
@@ -158,6 +159,7 @@ public class BluetoothChatService {
     }
 
     protected boolean onDialogsItemClicked(BluetoothDevice device) {
+        if (mSockets.containsKey(device.getAddress())) { return true; }
         if (mConnecter != null) { mConnecter.cancel(); mConnecter = null; }
 
         mAcceptThread.cancel();
@@ -172,7 +174,7 @@ public class BluetoothChatService {
         return result;
     }
 
-    protected void clearRedundantConnection() {
+    protected synchronized void clearRedundantConnection() {
         while (mSockets.size() >= MAX_CONNECTION) {
             String address = mSocketsQueue.getLast();
             mSocketsQueue.removeLast();
@@ -185,7 +187,7 @@ public class BluetoothChatService {
         }
     }
 
-    private void socketQueueReorder(String address) {
+    protected synchronized void socketQueueReorder(String address) {
         int index = mSocketsQueue.indexOf(address);
 
         if (index == -1) {
@@ -259,7 +261,14 @@ public class BluetoothChatService {
         if (address.equals(mDeviceAddressNow)) {
             mMessagesAdapter = mApp.getMessagesAdapter();
             mMessagesAdapter.addToStart(message, true);
+        } else {
+            Dialog dialog = mDialogsAdapter.getItemById(address);
+            dialog.setUnreadCount(dialog.getUnreadCount() + 1);
         }
+    }
+
+    protected void setDeviceAddressToNull() {
+        mDeviceAddressNow = null;
     }
 
     private class AcceptThread extends Thread {
