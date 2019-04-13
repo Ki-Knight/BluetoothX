@@ -42,7 +42,6 @@ public class AboutPageActivity extends AppCompatActivity {
         setContentView(aboutPage);
     }
 
-
     Element getCopyRightsElement() {
         Element copyRightsElement = new Element();
         final String copyrights = String.format(getString(R.string.copy_right),

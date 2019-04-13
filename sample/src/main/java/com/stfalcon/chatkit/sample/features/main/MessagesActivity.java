@@ -62,13 +62,16 @@ public class MessagesActivity extends DemoMessagesActivity
         input.setInputListener(this);
         input.setTypingListener(this);
         input.setAttachmentsListener(this);
+
+        BluetoothXApplication app = (BluetoothXApplication)getApplication();
+        mBluetoothChatService = app.getBluetoothChatService();
+        app.setMessagesAdapter(messagesAdapter);
     }
 
     @Override
     public boolean onSubmit(CharSequence input) {
         String content = input.toString();
-        Message message = MessagesFixtures.getTextMessage(input.toString());
-        mBluetoothChatService.onTextMessageSubmit(message);
+        mBluetoothChatService.onTextMessageSubmit(content);
 //        super.messagesAdapter.addToStart(
 //                MessagesFixtures.getTextMessage(input.toString()), true);
         return true;

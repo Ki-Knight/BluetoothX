@@ -59,9 +59,11 @@ import com.stfalcon.chatkit.sample.R;
 import com.stfalcon.chatkit.sample.common.data.fixtures.DialogsFixtures;
 import com.stfalcon.chatkit.sample.common.data.model.Dialog;
 import com.stfalcon.chatkit.sample.common.data.model.Message;
+import com.stfalcon.chatkit.sample.common.data.model.User;
 import com.stfalcon.chatkit.sample.features.demo.DemoDialogsActivity;
 import com.stfalcon.chatkit.sample.utils.AppUtils;
 
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -108,6 +110,7 @@ public class DeviceListActivity extends DemoDialogsActivity {
     private Map<String, BluetoothDevice> mDeviceMap;
     private MenuItem mScanItem;
     private BluetoothChatProtocol mProtocal;
+    private BluetoothXApplication mApp;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -152,8 +155,11 @@ public class DeviceListActivity extends DemoDialogsActivity {
         filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
         registerReceiver(mBroadcastReceiver, filter);
 
-        mBluetoothChatService = new BluetoothChatService(this, mBluetoothAdapter,
+        mApp = (BluetoothXApplication)getApplication();
+        mBluetoothChatService = new BluetoothChatService(mApp, mBluetoothAdapter,
                 mDialogsAdapter, mHandler);
+        mApp.setBluetoothChatService(mBluetoothChatService);
+        mProtocal = new BluetoothChatProtocol();
 
         mHandler.postDelayed(new Runnable() {
 
@@ -270,7 +276,6 @@ public class DeviceListActivity extends DemoDialogsActivity {
         }
     }
 
-
     // Bluetooth broadcast receiver
     protected class BluetoothReceiver extends BroadcastReceiver {
 
@@ -368,12 +373,6 @@ public class DeviceListActivity extends DemoDialogsActivity {
             mmProgressDialog.setCancelable(false);
             mmProgressDialog.getProgressHelper().setBarColor(R.color.material_blue_grey_80);
             mmProgressDialog.show();
-//            mProgressDialog = ProgressDialogFragment.createBuilder(DeviceListActivity.this,
-//                    getSupportFragmentManager())
-//                    .setCancelableOnTouchOutside(false)
-//                    .setTitle("Connecting")
-//                    .setMessage("Please wait")
-//                    .show();
         }
 
         @Override
@@ -401,21 +400,20 @@ public class DeviceListActivity extends DemoDialogsActivity {
         public void handleMessage(android.os.Message msg) {
             switch(msg.what) {
             case MESSAGE_READ:
-//                Bundle bundle = msg.getData();
-//                byte[] readBuf = bundle.getByteArray(BUFFER);
-//                String address = bundle.getString(ADDRESS);
-//
-//                Date date =
-//
-//                BluetoothDevice device = mDeviceMap.get(address);
-//                Object msgo = mProtocal.getMessageFromByteArray(readBuf);
-//                if (msgo instanceof String) {
-//                    Message message = new Message(
-//                            address,
-//
-//                    );
-//                }
-//                mBluetoothChatService.onMessageReceived(message, device);
+                Bundle bundle = msg.getData();
+                byte[] readBuf = bundle.getByteArray(BUFFER);
+                String address = bundle.getString(ADDRESS);
+
+                Date date = Calendar.getInstance().getTime();
+
+                BluetoothDevice device = mDeviceMap.get(address);
+                Object msgo = mProtocal.getMessageFromByteArray(readBuf);
+                if (msgo instanceof String) {
+                    Message message = mDialogHandler.getTextMessageFromString((String) msgo,
+                            device.getAddress(),
+                            mDialogHandler.getUsersFromDevice(device, false), date);
+                    mBluetoothChatService.onMessageReceived(message);
+                }
                 break;
             case MESSAGE_WRITE:
                 break;

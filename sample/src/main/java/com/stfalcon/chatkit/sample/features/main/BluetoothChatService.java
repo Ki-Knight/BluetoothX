@@ -29,6 +29,8 @@ import android.bluetooth.BluetoothSocket;
 import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.util.Log;
 
 import com.stfalcon.chatkit.dialogs.DialogsListAdapter;
@@ -40,6 +42,8 @@ import com.stfalcon.chatkit.sample.common.data.model.User;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -85,16 +89,13 @@ public class BluetoothChatService {
     private Handler mHandler;
     private BluetoothChatProtocol mProtocol;
 
-    protected BluetoothChatService(Context context, BluetoothAdapter btadapter,
+    private BluetoothXApplication mApp;
+
+    protected BluetoothChatService(BluetoothXApplication app, BluetoothAdapter btadapter,
                                    DialogsListAdapter<Dialog> adapter, Handler handler) {
         mBluetoothAdapter = btadapter;
         mDialogsAdapter = adapter;
 
-        mcontext = context;
-        //mAcceptThread = new AcceptThread();
-        //mConnectThread = new ConnectThread();
-
-        // Start server connection listener service
         mState = SERVER_CONNECTING;
 
         // Initialize socket manager
@@ -102,11 +103,14 @@ public class BluetoothChatService {
         mSocketsQueue = new LinkedList<>();
         mHandler = handler;
         mProtocol = new BluetoothChatProtocol();
+        mApp = app;
+        mMessageHandler = new MessageHandler();
     }
 
     private synchronized void connect(BluetoothSocket socket) {
         BluetoothDevice device = socket.getRemoteDevice();
         ConnectedThread connection = new ConnectedThread(socket, device);
+        connection.start();
 
         String address = device.getAddress();
         mSockets.put(address, connection);
@@ -117,8 +121,8 @@ public class BluetoothChatService {
 
         // Set the user information of local bluetooth device
         User temp = new User(
-                mBluetoothAdapter.getAddress(),
-                mBluetoothAdapter.getName(),
+                "0",
+                 mBluetoothAdapter.getName(),
                 null,
                 true
         );
@@ -193,7 +197,7 @@ public class BluetoothChatService {
         }
     }
 
-    protected synchronized void onTextMessageSubmit(Message message) {
+    protected synchronized void onTextMessageSubmit(String content) {
         ConnectedThread thread = mSockets.get(mDeviceAddressNow);
         if (thread == null) {
             Log.d(TAG,"onTextMessageSubmit() connection do not exist!");
@@ -206,9 +210,21 @@ public class BluetoothChatService {
             mHandler.sendMessage(msg);
         }
 
+        Date date = Calendar.getInstance().getTime();
+        Message message = new Message(
+                mDeviceAddressNow,
+                new User(
+                        "0",
+                        mUserSelf.getName(),
+                        null,
+                        true
+                ),
+                content,
+                date);
         byte[] msgb = mProtocol.getByteArrayFromTextMessage(message);
         thread.write(msgb);
 
+        mMessagesAdapter = mApp.getMessagesAdapter();
         mDialogsAdapter.updateDialogWithMessage(mDeviceAddressNow, message);
         mMessagesAdapter.addToStart(message, true);
         mMessageHandler.addHistory(mDeviceAddressNow, message);
@@ -241,6 +257,7 @@ public class BluetoothChatService {
         mDialogsAdapter.updateDialogWithMessage(address, message);
         mMessageHandler.addHistory(address, message);
         if (address.equals(mDeviceAddressNow)) {
+            mMessagesAdapter = mApp.getMessagesAdapter();
             mMessagesAdapter.addToStart(message, true);
         }
     }

@@ -56,30 +56,35 @@ public class BluetoothChatProtocol {
         };
     }
 
-    private String getStringFromByteArray(byte[] buffer, int index) {
+    protected String getStringFromByteArray(byte[] buffer, int index) {
         int length = byteArray2Integer(buffer, index);
         index += 4;
 
-        return Base64.encodeToString(buffer, index, length, Base64.DEFAULT);
+        byte[] decoded = Base64.decode(buffer, index, length, Base64.DEFAULT);
+        String string = new String(decoded);
+        return string;
     }
 
     protected void getByteArrayFromString(String string, byte[] buffer, int index) {
-        int length = string.length();
+        byte[] code = string.getBytes();
+        byte[] encoded = Base64.encode(code, Base64.DEFAULT);
+        int length = encoded.length;
+
         integer2ByteArray(length, buffer, index);
         index += 4;
 
-        byte[] code = string.getBytes();
-        System.arraycopy(code, 0, buffer, index, code.length);
+        System.arraycopy(encoded, 0, buffer, index, length);
     }
 
-    private byte[] getByteArrayFromString(String string) {
-        int length = string.length();
-        byte[] lb = integer2ByteArray(length);
+    protected byte[] getByteArrayFromString(String string) {
+        byte[] code = string.getBytes();
+        byte[] encoded = Base64.encode(code, Base64.DEFAULT);
+        int length = encoded.length;
 
-        byte[] sb = string.getBytes();
-        byte[] buffer = new byte[lb.length + sb.length];
+        byte[] lb = integer2ByteArray(length);
+        byte[] buffer = new byte[lb.length + encoded.length];
         System.arraycopy(lb, 0, buffer, 0, lb.length);
-        System.arraycopy(sb, 0, buffer, lb.length, sb.length);
+        System.arraycopy(encoded, 0, buffer, lb.length, encoded.length);
 
         return buffer;
     }

@@ -10,7 +10,7 @@
 
     <application
         tools:replace="icon"
-
+        android:name=".features.main.BluetoothXApplication"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/GreenTheme"
