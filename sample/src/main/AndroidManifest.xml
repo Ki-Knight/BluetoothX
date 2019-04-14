@@ -17,7 +17,7 @@
         tools:ignore="GoogleAppIndexingWarning">
 
         <activity
-            android:name=".features.main.DeviceListActivity"
+            android:name=".features.main.MainActivity"
             android:theme="@style/BlueTheme">
 
             <intent-filter>
@@ -26,6 +26,9 @@
             </intent-filter>
 
         </activity>
+        <activity
+            android:name=".features.main.DeviceListActivity"
+            android:theme="@style/BlueTheme"/>
         <activity
             android:name=".features.main.MessagesActivity"
             android:theme="@style/BlueTheme"/>

@@ -37,7 +37,7 @@ public class ChatServiceGroup {
     private static final String NAME_SECURE = "DeviceListActivitySecure";
 
     // UUID for bluetooth service
-    private static final UUID MY_UUID = UUID.fromString("ec12ea6a-2b7a-458e-8563-5789a296b833");
+    private static final UUID MY_UUID = UUID.fromString("86b82faa-570a-4f77-aca2-f5e3e0708537");
     private static final int MAX_CONNECTION = 5;
 
     // Message list view adapter
@@ -56,7 +56,6 @@ public class ChatServiceGroup {
     private static final int SERVER_CONNECTING = 1;
 
     // The address of now interacting device
-    private String mDeviceAddressNow = null;
     private User mUserSelf;
     private Context mcontext;
 
@@ -69,7 +68,7 @@ public class ChatServiceGroup {
     private BluetoothXApplication mApp;
 
     protected ChatServiceGroup(BluetoothXApplication app, BluetoothAdapter btadapter,
-                                   DialogsListAdapter<Dialog> adapter, Handler handler) {
+                                   Handler handler) {
         mBluetoothAdapter = btadapter;
 
         mState = SERVER_CONNECTING;
@@ -144,7 +143,6 @@ public class ChatServiceGroup {
 
         mAcceptThread = new AcceptThread();
         mAcceptThread.start();
-        mDeviceAddressNow = device.getAddress();
         return result;
     }
 
@@ -174,21 +172,9 @@ public class ChatServiceGroup {
     }
 
     protected synchronized void onTextMessageSubmit(String content) {
-        ConnectedThread thread = mSockets.get(mDeviceAddressNow);
-        if (thread == null) {
-            Log.d(TAG,"onTextMessageSubmit() connection do not exist!");
-
-            android.os.Message msg = mHandler.obtainMessage(DeviceListGroup.MESSAGE_TOAST);
-            Bundle bundle = new Bundle();
-            bundle.putString(DeviceListGroup.TOAST, "Connection do not exist!");
-            msg.setData(bundle);
-
-            mHandler.sendMessage(msg);
-        }
-
         Date date = Calendar.getInstance().getTime();
         Message message = new Message(
-                mDeviceAddressNow,
+                "all",
                 new User(
                         "0",
                         mUserSelf.getName(),
@@ -198,27 +184,22 @@ public class ChatServiceGroup {
                 content,
                 date);
         byte[] msgb = mProtocol.getByteArrayFromTextMessage(message);
-        thread.write(msgb);
+
+        for (Map.Entry<String, ConnectedThread> entry : mSockets.entrySet()) {
+            ConnectedThread thread = entry.getValue();
+            thread.write(msgb);
+        }
 
         mMessagesAdapter = mApp.getMessagesAdapter();
         mMessagesAdapter.addToStart(message, true);
     }
 
     protected synchronized void onAttachmentMessageSubmit(Message message) {
-        ConnectedThread thread = mSockets.get(mDeviceAddressNow);
-        if (thread == null) {
-            Log.d(TAG,"onAttachmentMessageSubmit() connection do not exist!");
-
-            android.os.Message msg = mHandler.obtainMessage(DeviceListGroup.MESSAGE_TOAST);
-            Bundle bundle = new Bundle();
-            bundle.putString(DeviceListGroup.TOAST, "Connection do not exist!");
-            msg.setData(bundle);
-
-            mHandler.sendMessage(msg);
-        }
-
         byte[] msgb = mProtocol.getByteArrayFromImageMwssage(message);
-        thread.write(msgb);
+        for (Map.Entry<String, ConnectedThread> entry : mSockets.entrySet()) {
+            ConnectedThread thread = entry.getValue();
+            thread.write(msgb);
+        }
 
         mMessagesAdapter.addToStart(message, true);
     }
@@ -226,10 +207,8 @@ public class ChatServiceGroup {
     protected synchronized void onMessageReceived(Message message) {
         String address = message.getId();
 
-        if (address.equals(mDeviceAddressNow)) {
-            mMessagesAdapter = mApp.getMessagesAdapter();
-            mMessagesAdapter.addToStart(message, true);
-        }
+        mMessagesAdapter = mApp.getMessagesAdapter();
+        mMessagesAdapter.addToStart(message, true);
     }
 
     private class AcceptThread extends Thread {

@@ -14,9 +14,6 @@ public class MainActivityPagerAdapter extends FragmentStatePagerAdapter {
 
     public static final int ID_DEFAULT = 0;
     public static final int ID_STYLED = 1;
-    public static final int ID_CUSTOM_LAYOUT = 2;
-    public static final int ID_CUSTOM_VIEW_HOLDER = 3;
-    public static final int ID_CUSTOM_CONTENT = 4;
 
     private Context context;
 
@@ -31,24 +28,12 @@ public class MainActivityPagerAdapter extends FragmentStatePagerAdapter {
         String description = null;
         switch (position) {
             case ID_DEFAULT:
-                title = context.getString(R.string.sample_title_default);
-                description = context.getString(R.string.sample_subtitle_default);
+                title = context.getString(R.string.fragment_chat);
+                description = context.getString(R.string.fragment_chat_discrip);
                 break;
             case ID_STYLED:
-                title = context.getString(R.string.sample_title_attrs);
-                description = context.getString(R.string.sample_subtitle_attrs);
-                break;
-            case ID_CUSTOM_LAYOUT:
-                title = context.getString(R.string.sample_title_layout);
-                description = context.getString(R.string.sample_subtitle_layout);
-                break;
-            case ID_CUSTOM_VIEW_HOLDER:
-                title = context.getString(R.string.sample_title_holder);
-                description = context.getString(R.string.sample_subtitle_holder);
-                break;
-            case ID_CUSTOM_CONTENT:
-                title = context.getString(R.string.sample_title_custom_content);
-                description = context.getString(R.string.sample_subtitle_custom_content);
+                title = context.getString(R.string.fragment_chat_group);
+                description = context.getString(R.string.fragment_chat_group_discrip);
                 break;
         }
         return DemoCardFragment.newInstance(position, title, description);

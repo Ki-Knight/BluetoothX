@@ -5,6 +5,7 @@ import android.os.Handler;
 
 import com.stfalcon.chatkit.dialogs.DialogsListAdapter;
 import com.stfalcon.chatkit.messages.MessagesListAdapter;
+import com.stfalcon.chatkit.sample.features.main.group.ChatServiceGroup;
 
 public class BluetoothXApplication extends Application {
     protected BluetoothChatService mBluetoothChatService;
@@ -12,6 +13,7 @@ public class BluetoothXApplication extends Application {
     protected DialogsListAdapter mDialogsAdapter;
     protected MessageHandler mMessageHandler;
     protected Handler mHandler;
+    protected ChatServiceGroup mChatServiceGroup;
 
     @Override
     public void onCreate() {
@@ -64,5 +66,13 @@ public class BluetoothXApplication extends Application {
         mDialogsAdapter = null;
         mMessageHandler = null;
         mHandler = null;
+    }
+
+    public void setChatServiceGroup(ChatServiceGroup service) {
+        mChatServiceGroup = service;
+    }
+
+    public ChatServiceGroup getChatServiceGroup() {
+        return mChatServiceGroup;
     }
 }

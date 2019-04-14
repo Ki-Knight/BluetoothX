@@ -114,6 +114,10 @@ public class DeviceListActivity extends DemoDialogsActivity {
     private BluetoothChatProtocol mProtocal;
     private BluetoothXApplication mApp;
 
+    public static void open(Context context) {
+        context.startActivity(new Intent(context, DeviceListActivity.class));
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
